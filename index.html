@@ -1,0 +1,75 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HM Correos</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen;
+      background-color: #f7f7f7;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    select, input, button {
+      width: 100%;
+      max-width: 300px;
+      padding: 0.8rem;
+      margin: 0.5rem 0;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #000;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button.stop {
+      background-color: red;
+      margin-top: 1rem;
+    }
+    .progress-bar {
+      width: 100%;
+      max-width: 300px;
+      height: 10px;
+      background-color: #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+    .progress {
+      height: 100%;
+      width: 0;
+      background-color: #4caf50;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <h1>HM Correos</h1>
+  <select>
+    <option value="">Selecciona el tipo de cliente</option>
+    <option value="notaria">Notaría</option>
+    <option value="juridico">Despacho Jurídico</option>
+    <option value="salud">Sector Salud</option>
+    <option value="construccion">Construcción</option>
+    <option value="dependencias">Dependencias Gubernamentales</option>
+    <option value="editoriales">Editoriales</option>
+    <option value="agencias">Agencias Creativas</option>
+  </select>
+  <input type="file" accept=".csv" />
+  <button>Enviar Correos</button>
+  <div class="progress-bar"><div class="progress"></div></div>
+  <button class="stop">STOP</button>
+</body>
+</html>
