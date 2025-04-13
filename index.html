@@ -1,0 +1,102 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HM Correos (Debug)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      padding: 20px;
+    }
+    h1 {
+      color: #000;
+    }
+    select, input, button {
+      display: block;
+      margin: 10px 0;
+      padding: 10px;
+      width: 100%;
+      max-width: 300px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .debug {
+      margin-top: 20px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      padding: 10px;
+      font-family: monospace;
+      color: #333;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: scroll;
+    }
+  </style>
+</head>
+<body>
+  <h1>HM Correos – Depuración</h1>
+  <select id="cliente">
+    <option value="">Selecciona el tipo de cliente</option>
+    <option value="notaria">Notaría</option>
+    <option value="juridico">Despacho Jurídico</option>
+    <option value="salud">Sector Salud</option>
+    <option value="construccion">Construcción</option>
+    <option value="dependencias">Dependencias Gubernamentales</option>
+    <option value="editoriales">Editoriales</option>
+    <option value="agencias">Agencias Creativas</option>
+  </select>
+  <input type="file" id="csvFile" accept=".csv" />
+  <button onclick="enviar()">Enviar Correos</button>
+
+  <div class="debug" id="debugOutput">[LOG] Esperando acción del usuario...</div>
+
+  <script>
+    function log(msg) {
+      document.getElementById("debugOutput").innerText += "\n" + msg;
+    }
+
+    async function enviar() {
+      const cliente = document.getElementById("cliente").value;
+      const archivo = document.getElementById("csvFile").files[0];
+
+      log("[INFO] Botón clickeado");
+      if (!cliente) {
+        log("[ERROR] No se seleccionó tipo de cliente");
+        return;
+      }
+
+      if (!archivo) {
+        log("[ERROR] No se cargó archivo .csv");
+        return;
+      }
+
+      log("[INFO] Cliente seleccionado: " + cliente);
+      log("[INFO] Archivo CSV detectado: " + archivo.name);
+
+      const formData = new FormData();
+      formData.append("archivo", archivo);
+      formData.append("cliente", cliente);
+
+      try {
+        log("[INFO] Enviando solicitud al backend...");
+        const res = await fetch("https://hmcorreos-backend.vercel.app/api/enviar", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          log("[SUCCESS] Correos enviados: " + data.enviados);
+        } else {
+          log("[SERVER ERROR] " + (data.error || "Respuesta no exitosa"));
+        }
+      } catch (err) {
+        log("[FATAL] No se pudo conectar al backend: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
