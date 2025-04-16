@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HM Correos Automáticos</title>
+  <style>
+    body { font-family: sans-serif; background: #0e0e0e; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 2rem; }
+    select, input, button { margin: 1rem 0; padding: 0.75rem; font-size: 1rem; border-radius: 5px; }
+    #log { margin-top: 2rem; width: 100%; max-width: 600px; background: #1a1a1a; padding: 1rem; border-radius: 5px; white-space: pre-wrap; height: 200px; overflow-y: scroll; }
+    .button-stop { background: crimson; color: white; border: none; padding: 0.75rem 1.5rem; margin-top: 1rem; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>HM Correos Automáticos 📬</h1>
+
+  <label for="tipo">Selecciona el tipo de cliente:</label>
+  <select id="tipo">
+    <option value="notaria">Notaría</option>
+    <option value="juridico">Despacho jurídico</option>
+    <option value="salud">Sector salud</option>
+    <option value="construccion">Construcción</option>
+    <option value="dependencias">Dependencias gubernamentales</option>
+    <option value="editoriales">Editoriales y librerías</option>
+    <option value="agencias">Agencias creativas</option>
+  </select>
+
+  <label for="csv">Selecciona el archivo CSV de correos:</label>
+  <input type="file" id="csv" accept=".csv"/>
+
+  <button onclick="enviarCorreos()">Enviar Correos</button>
+  <button class="button-stop" onclick="pararEnvio()">🛑 STOP</button>
+
+  <div id="log">[LOG] Esperando acción del usuario...</div>
+
+  <script>
+    let stop = false;
+
+    function pararEnvio() {
+      stop = true;
+      log("[STOP] Proceso detenido por el usuario.");
+    }
+
+    function log(text) {
+      const logBox = document.getElementById('log');
+      logBox.textContent += "\n" + text;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    async function enviarCorreos() {
+      stop = false;
+      const tipo = document.getElementById('tipo').value;
+      const archivo = document.getElementById('csv').files[0];
+
+      if (!archivo) {
+        log("[ERROR] No se ha seleccionado ningún archivo.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const correos = e.target.result.split(/\r?\n/).filter(c => c.includes("@"));
+        log(`[INFO] Cliente seleccionado: ${tipo}`);
+        log(`[INFO] Correos cargados: ${correos.length}`);
+
+        for (let i = 0; i < correos.length; i++) {
+          if (stop) break;
+          const correo = correos[i];
+          log(`[INFO] Enviando a ${correo}...`);
+
+          try {
+            const res = await fetch("https://hmcorreosbackend.onrender.com/enviar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ tipo, correo })
+            });
+
+            const data = await res.json();
+            if (data.ok) {
+              log(`✔️ Enviado a ${correo}`);
+            } else {
+              log(`❌ Error con ${correo}: ${data.error}`);
+            }
+          } catch (err) {
+            log(`❌ Falló el envío a ${correo}: ${err.message}`);
+          }
+
+          await new Promise(r => setTimeout(r, 3000));
+        }
+
+        if (!stop) log("[✅] Proceso completado.");
+      };
+
+      reader.readAsText(archivo);
+    }
+  </script>
+</body>
+</html>
