@@ -1,0 +1,100 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="hm_mail_icon_512x512.png" />
+  <title>HM Correos Automáticos</title>
+  <style>
+    body { background: #111; color: white; font-family: sans-serif; text-align: center; padding: 2rem; }
+    form { max-width: 600px; margin: auto; background: #1a1a1a; padding: 2rem; border-radius: 1rem; }
+    label { display: block; text-align: left; margin: 1rem 0 0.5rem; }
+    select, input, textarea { width: 100%; padding: 0.5rem; border: none; border-radius: 5px; }
+    button { margin-top: 1rem; background: #00ffc8; border: none; padding: 0.75rem 2rem; font-weight: bold; cursor: pointer; }
+    .progress { margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>HM Correos Automáticos</h1>
+  <form>
+    <label>Tipo de cliente:
+      <select id="cliente">
+        <option>Notarías</option>
+        <option>Despachos jurídicos</option>
+        <option>Sector salud</option>
+        <option>Construcción</option>
+        <option>Dependencias gubernamentales</option>
+        <option>Editoriales</option>
+        <option>Agencias de publicidad</option>
+      </select>
+    </label>
+    <label>Seleccionar archivo CSV:
+      <input type="file" id="csv" accept=".csv" />
+    </label>
+    <label>Asunto:
+      <input type="text" id="asunto" />
+    </label>
+    <label>Contenido HTML:
+      <textarea id="contenido" rows="6">&lt;h2&gt;Ejemplo de contenido HTML&lt;/h2&gt;&lt;p&gt;Correo personalizado según tipo de cliente.&lt;/p&gt;</textarea>
+    </label>
+    <button type="submit">Enviar correos</button>
+    <div class="progress" id="progreso"></div>
+  </form>
+
+  <script>
+    const form = document.querySelector("form");
+    const asunto = document.getElementById("asunto");
+    const contenido = document.getElementById("contenido");
+    const csv = document.getElementById("csv");
+    const cliente = document.getElementById("cliente");
+    const progreso = document.getElementById("progreso");
+
+    const asuntosPorCliente = {
+      "Notarías": "Organización impecable para tus apéndices notariales",
+      "Despachos jurídicos": "Presentación profesional de tus expedientes jurídicos",
+      "Sector salud": "Encuadernado seguro para tus archivos clínicos",
+      "Construcción": "Documentación técnica encuadernada con precisión",
+      "Dependencias gubernamentales": "Orden documental con calidad institucional",
+      "Editoriales": "Acabado editorial premium para tus publicaciones",
+      "Agencias de publicidad": "Portafolios impactantes, encuadernados a medida"
+    };
+
+    cliente.addEventListener("change", () => {
+      asunto.value = asuntosPorCliente[cliente.value] || "";
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault(); // 💡 Previene recarga de la página
+
+      if (!csv.files.length) return alert("Sube un archivo CSV.");
+      const file = csv.files[0];
+      const reader = new FileReader();
+      reader.onload = async function () {
+        const lines = reader.result.split(/\r?\n/).filter(Boolean);
+        const html = contenido.value;
+        const subject = asunto.value;
+        let sent = 0, failed = 0;
+
+        progreso.innerText = "⏳ Enviando correos, por favor espera...";
+        for (let i = 0; i < lines.length; i++) {
+          const to = lines[i].trim();
+          try {
+            const res = await fetch("https://hmcorreos.onrender.com/send-email", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ to, subject, html })
+            });
+            res.ok ? sent++ : failed++;
+          } catch {
+            failed++;
+          }
+        }
+        progreso.innerText = `✅ Correos enviados: ${sent} | ❌ Fallos: ${failed}`;
+      };
+      reader.readAsText(file);
+    });
+  </script>
+</body>
+</html>
