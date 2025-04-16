@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HM Correos Automáticos</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <style>
+    body {
+      background-color: #f4f4f4;
+      color: #1a1a1a;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 2.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    h1 {
+      font-size: 1.8rem;
+      text-align: center;
+      margin-bottom: 2rem;
+      color: #2c3e50;
+    }
+    label {
+      font-weight: 600;
+      margin-top: 1rem;
+    }
+    .btn-primary {
+      background-color: #2c3e50;
+      border: none;
+    }
+    .btn-primary:hover {
+      background-color: #1a252f;
+    }
+    .progress {
+      margin-top: 1rem;
+      height: 25px;
+    }
+    #preview {
+      background: #f0f0f0;
+      padding: 1rem;
+      margin-top: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 0.5rem;
+    }
+    #asuntoAuto {
+      margin-top: 0.75rem;
+      font-style: italic;
+      color: #2c3e50;
+    }
+  </style>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="hm_mail_icon_512x512.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#2c3e50">
+</head>
+<body>
+  <div class="container">
+    <h1 style="font-size: 2.5rem; font-weight: bold; color: #2c3e50; text-align: center; font-family: Georgia, serif;">HM Correos Automáticos</h1>
+    <form id="emailForm">
+      <label for="clientType">Tipo de cliente:</label>
+      <select id="clientType" class="form-select" required>
+        <option value="notarias">Notarías públicas</option>
+        <option value="despachos">Despachos jurídicos</option>
+        <option value="salud">Sector salud</option>
+        <option value="construccion">Construcción</option>
+        <option value="gobierno">Dependencias gubernamentales</option>
+        <option value="editoriales">Editoriales</option>
+        <option value="publicidad">Agencias de publicidad</option>
+      </select>
+
+      <div id="asuntoAuto">Asunto: 📚 Organización impecable para tus apéndices notariales</div>
+
+      <label for="csvFile">Seleccionar archivo CSV:</label>
+      <input type="file" id="csvFile" accept=".csv" class="form-control" required />
+
+      <label>Vista previa del contenido del correo:</label>
+      <div id="preview">
+<html>
+<body style="font-family: Arial, sans-serif; color: #333;">
+<p>Buenas tardes, un gusto,</p>
+<p>Mi nombre es Marcelo Olivo. Mando este mensaje para ofrecer el servicio de encuadernado para apéndices y folios.</p>
+<p>Le cuento un poquito sobre nosotros: somos una empresa que se dedica a la reparación y encuadernado de libros. Para los folios, programamos visita a la notaría para encuadernarlos; y los apéndices pueden enviarse por cantidad, se encuadernan y se entregan. Todo esto para que las notarías lleven un mejor orden con sus escrituras.</p>
+<p>El encuadernado lleva pasta dura y grabado en el lomo o en la portada con el nombre de la notaría, número de apéndice y los tomos si el apéndice está muy grande. El precio por libro y carpeta lo manejamos en <strong>$250.00 MXN</strong> (Esto incluye el encuadernado, el grabado y la entrega).</p>
+<p>Con la garantía de un trabajo bien hecho y un trato impecable, nosotros nos encargamos de recoger los apéndices e ir a dejarlos a donde nos indiquen, ya sea en su notaría o en bodegas que ustedes manejen.</p>
+<p>Sería fantástico poder trabajar con ustedes.</p>
+<p>Sin más por el momento, quedamos atentos a la respuesta. Muchas gracias, saludos cordiales.</p>
+<br/>
+<p><strong>HM Encuadernaciones</strong></p>
+<p>📞 81 3442 5657</p>
+<p>📧 hmencuadernaciones@gmail.com</p>
+
+<p style="margin-top: 2rem; font-weight: bold;">
+  ¿Te interesa? 👉 
+  <a href="https://hmcotizacionesform.vercel.app/" style="color: #007bff; text-decoration: none;" target="_blank">
+    Haz clic aquí para solicitar tu cotización
+  </a>
+</p>
+</body>
+</html>
+</div>
+
+      <button type="submit" class="btn btn-primary w-100 mt-4">Enviar correos</button>
+      <div class="progress visually-hidden" id="progressBar">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
+      </div>
+      <div class="alert alert-warning mt-3">⏳ Si es tu primer envío del día, espera unos segundos mientras se activa el servidor.</div>
+<div class="mt-3" id="status"></div>
+    </form>
+  </div>
+  <script>
+const form = document.getElementById('emailForm');
+const progressBar = document.getElementById('progressBar');
+const progress = progressBar.querySelector('.progress-bar');
+const statusDiv = document.getElementById('status');
+
+const templates = {"notarias": "\n<html>\n<body style=\"font-family: Arial, sans-serif; color: #333;\">\n<p>Buenas tardes, un gusto,</p>\n<p>Mi nombre es Marcelo Olivo. Mando este mensaje para ofrecer el servicio de encuadernado para ap\u00e9ndices y folios.</p>\n<p>Le cuento un poquito sobre nosotros: somos una empresa que se dedica a la reparaci\u00f3n y encuadernado de libros. Para los folios, programamos visita a la notar\u00eda para encuadernarlos; y los ap\u00e9ndices pueden enviarse por cantidad, se encuadernan y se entregan. Todo esto para que las notar\u00edas lleven un mejor orden con sus escrituras.</p>\n<p>El encuadernado lleva pasta dura y grabado en el lomo o en la portada con el nombre de la notar\u00eda, n\u00famero de ap\u00e9ndice y los tomos si el ap\u00e9ndice est\u00e1 muy grande. El precio por libro y carpeta lo manejamos en <strong>$250.00 MXN</strong> (Esto incluye el encuadernado, el grabado y la entrega).</p>\n<p>Con la garant\u00eda de un trabajo bien hecho y un trato impecable, nosotros nos encargamos de recoger los ap\u00e9ndices e ir a dejarlos a donde nos indiquen, ya sea en su notar\u00eda o en bodegas que ustedes manejen.</p>\n<p>Ser\u00eda fant\u00e1stico poder trabajar con ustedes.</p>\n<p>Sin m\u00e1s por el momento, quedamos atentos a la respuesta. Muchas gracias, saludos cordiales.</p>\n<br/>\n<p><strong>HM Encuadernaciones</strong></p>\n<p>\ud83d\udcde 81 3442 5657</p>\n<p>\ud83d\udce7 hmencuadernaciones@gmail.com</p>\n\n<p style=\"margin-top: 2rem; font-weight: bold;\">\n  \u00bfTe interesa? \ud83d\udc49 \n  <a href=\"https://hmcotizacionesform.vercel.app/\" style=\"color: #007bff; text-decoration: none;\" target=\"_blank\">\n    Haz clic aqu\u00ed para solicitar tu cotizaci\u00f3n\n  </a>\n</p>\n</body>\n</html>\n", "despachos": "\n<html>\n<body style=\"font-family: Arial, sans-serif; color: #333; line-height: 1.6;\">\n<p>Estimado equipo del despacho jur\u00eddico:</p>\n<p><strong>Mi nombre es Marcelo Olivo, me comunico de parte de HM Encuadernaciones</strong>, empresa especializada en el <strong>encuadernado profesional de documentos legales</strong>, como expedientes, contratos, demandas y archivos jur\u00eddicos.</p>\n<p>Sabemos que en un despacho jur\u00eddico la <strong>presentaci\u00f3n y conservaci\u00f3n de la documentaci\u00f3n</strong> es fundamental. Por ello, ofrecemos:</p>\n<ul>\n<li>\u2705 Encuadernado en <strong>pasta dura</strong></li>\n<li>\u2705 <strong>Grabado personalizado</strong> con el nombre del despacho y nombre del expediente</li>\n<li>\u2705 Servicio de <strong>recolecci\u00f3n y entrega</strong> en su oficina</li>\n<li>\u2705 Precio fijo: <strong>$250 MXN por ejemplar</strong></li>\n</ul>\n<p>Nuestro objetivo es ayudarles a mantener un <strong>archivo ordenado, elegante y duradero</strong>, cuidando cada detalle del trabajo que representa su esfuerzo profesional.</p>\n<p>Si desean conocer ejemplos f\u00edsicos o agendar una visita, estar\u00e9 encantado de coordinarlo personalmente.</p>\n<p>Sin m\u00e1s por el momento, quedamos atentos a cualquier duda o solicitud.<br/>\n    \u00a1Ser\u00e1 un gusto colaborar con ustedes!</p>\n<br/>\n<p>Saludos cordiales,</p>\n<p><strong>Marcelo Olivo</strong><br/>\n    HM Encuadernaciones<br/>\n    \ud83d\udcde 81 3442 5657<br/>\n    \ud83d\udce7 hmencuadernaciones@gmail.com</p>\n\n<p style=\"margin-top: 2rem; font-weight: bold;\">\n  \u00bfTe interesa? \ud83d\udc49 \n  <a href=\"https://hmcotizacionesform.vercel.app/\" style=\"color: #007bff; text-decoration: none;\" target=\"_blank\">\n    Haz clic aqu\u00ed para solicitar tu cotizaci\u00f3n\n  </a>\n</p>\n</body>\n</html>\n", "salud": "\n<html>\n<body style=\"font-family: Arial, sans-serif; color: #333; line-height: 1.6;\">\n<p>Estimado equipo administrativo:</p>\n<p><strong>Mi nombre es Marcelo Olivo, me comunico de parte de HM Encuadernaciones</strong>, empresa especializada en el <strong>encuadernado profesional de documentos administrativos, cl\u00ednicos y operativos</strong>, como manuales, protocolos, expedientes internos, bit\u00e1coras, historiales m\u00e9dicos y m\u00e1s.</p>\n<p>Entendemos que en una instituci\u00f3n de salud, el orden, la presentaci\u00f3n y el resguardo de informaci\u00f3n es crucial. Por eso ofrecemos:</p>\n<ul>\n<li>\u2705 Encuadernado en <strong>pasta dura resistente</strong></li>\n<li>\u2705 <strong>Grabado personalizado</strong> con el nombre de la instituci\u00f3n, departamento o tipo de archivo</li>\n<li>\u2705 <strong>Servicio de recolecci\u00f3n y entrega</strong> a domicilio</li>\n<li>\u2705 Precio fijo: <strong>$250 MXN por ejemplar</strong></li>\n</ul>\n<p>Nuestro servicio permite a hospitales, cl\u00ednicas y laboratorios mantener sus archivos <strong>organizados, profesionales y f\u00e1cilmente accesibles</strong>, proyectando una imagen impecable ante pacientes, auditores y personal m\u00e9dico.</p>\n<p>Si desean conocer ejemplos f\u00edsicos o agendar una visita, estoy a su disposici\u00f3n.</p>\n<p>Sin m\u00e1s por el momento, quedamos atentos a cualquier consulta.<br/>\n    \u00a1Ser\u00e1 un gusto colaborar con su instituci\u00f3n!</p>\n<br/>\n<p>Saludos cordiales,</p>\n<p><strong>Marcelo Olivo</strong><br/>\n    HM Encuadernaciones<br/>\n    \ud83d\udcde 81 3442 5657<br/>\n    \ud83d\udce7 hmencuadernaciones@gmail.com</p>\n\n<p style=\"margin-top: 2rem; font-weight: bold;\">\n  \u00bfTe interesa? \ud83d\udc49 \n  <a href=\"https://hmcotizacionesform.vercel.app/\" style=\"color: #007bff; text-decoration: none;\" target=\"_blank\">\n    Haz clic aqu\u00ed para solicitar tu cotizaci\u00f3n\n  </a>\n</p>\n</body>\n</html>\n", "construccion": "\n<html>\n<body style=\"font-family: Arial, sans-serif; color: #333; line-height: 1.6;\">\n<p>Estimado equipo de trabajo:</p>\n<p><strong>Mi nombre es Marcelo Olivo, me comunico de parte de HM Encuadernaciones</strong>, empresa especializada en el <strong>encuadernado profesional de documentos t\u00e9cnicos y administrativos</strong>, como planos, proyectos ejecutivos, propuestas de licitaci\u00f3n, bit\u00e1coras de obra y expedientes de obra civil.</p>\n<p>Sabemos que en el sector construcci\u00f3n y arquitectura, la presentaci\u00f3n y conservaci\u00f3n de la documentaci\u00f3n es clave para el profesionalismo y la organizaci\u00f3n. Por ello ofrecemos:</p>\n<ul>\n<li>\u2705 Encuadernado en <strong>pasta dura</strong>, ideal para proteger documentos voluminosos</li>\n<li>\u2705 <strong>Grabado personalizado</strong> con nombre del proyecto, empresa o tipo de archivo</li>\n<li>\u2705 <strong>Servicio de recolecci\u00f3n y entrega</strong> en oficina o sitio de obra</li>\n<li>\u2705 Precio fijo: <strong>$250 MXN por ejemplar</strong></li>\n</ul>\n<p>Con nuestro servicio, su documentaci\u00f3n se mantendr\u00e1 <strong>protegida, bien organizada y lista para entregar a clientes, auditores o autoridades</strong>.</p>\n<p>Si desean conocer ejemplos f\u00edsicos o agendar una visita, estoy a su disposici\u00f3n.</p>\n<p>Sin m\u00e1s por el momento, quedamos atentos a cualquier consulta.<br/>\n    \u00a1Ser\u00e1 un gusto colaborar con su empresa!</p>\n<br/>\n<p>Saludos cordiales,</p>\n<p><strong>Marcelo Olivo</strong><br/>\n    HM Encuadernaciones<br/>\n    \ud83d\udcde 81 3442 5657<br/>\n    \ud83d\udce7 hmencuadernaciones@gmail.com</p>\n\n<p style=\"margin-top: 2rem; font-weight: bold;\">\n  \u00bfTe interesa? \ud83d\udc49 \n  <a href=\"https://hmcotizacionesform.vercel.app/\" style=\"color: #007bff; text-decoration: none;\" target=\"_blank\">\n    Haz clic aqu\u00ed para solicitar tu cotizaci\u00f3n\n  </a>\n</p>\n</body>\n</html>\n", "gobierno": "\n<html>\n<body style=\"font-family: Arial, sans-serif; color: #333; line-height: 1.6;\">\n<p>Estimado equipo administrativo:</p>\n<p><strong>Mi nombre es Marcelo Olivo, me comunico de parte de HM Encuadernaciones</strong>, empresa especializada en el <strong>encuadernado profesional de documentos oficiales y administrativos</strong>, como informes, reglamentos, actas, archivos hist\u00f3ricos y documentaci\u00f3n interna.</p>\n<p>Sabemos que en las dependencias gubernamentales el orden documental es esencial. Por ello ofrecemos:</p>\n<ul>\n<li>\u2705 Encuadernado en <strong>pasta dura</strong> con acabado institucional</li>\n<li>\u2705 <strong>Grabado personalizado</strong> con logos, nombre del \u00e1rea o proyecto</li>\n<li>\u2705 <strong>Servicio de recolecci\u00f3n y entrega</strong></li>\n<li>\u2705 Precio fijo: <strong>$250 MXN por ejemplar</strong></li>\n</ul>\n<p>Ayudamos a mantener sus archivos <strong>organizados, protegidos y con imagen profesional</strong>, ideal para auditor\u00edas, archivos hist\u00f3ricos y presentaciones internas.</p>\n<p>Con gusto podemos brindar ejemplos f\u00edsicos o coordinar una visita.</p>\n<p>Saludos cordiales,<br/><strong>Marcelo Olivo</strong><br/>\n    HM Encuadernaciones<br/>\n    \ud83d\udcde 81 3442 5657<br/>\n    \ud83d\udce7 hmencuadernaciones@gmail.com</p>\n\n<p style=\"margin-top: 2rem; font-weight: bold;\">\n  \u00bfTe interesa? \ud83d\udc49 \n  <a href=\"https://hmcotizacionesform.vercel.app/\" style=\"color: #007bff; text-decoration: none;\" target=\"_blank\">\n    Haz clic aqu\u00ed para solicitar tu cotizaci\u00f3n\n  </a>\n</p>\n</body>\n</html>\n", "editoriales": "\n<html>\n<body style=\"font-family: Arial, sans-serif; color: #333; line-height: 1.6;\">\n<p>Estimado equipo editorial/librero:</p>\n<p><strong>Mi nombre es Marcelo Olivo, me comunico de parte de HM Encuadernaciones</strong>, empresa especializada en el <strong>encuadernado profesional de publicaciones impresas</strong>, como libros, revistas, cuadernillos especiales y reediciones.</p>\n<p>Nos especializamos en dar acabados duraderos y presentaciones de alta calidad, ideales para publicaciones limitadas o colecciones especiales. Ofrecemos:</p>\n<ul>\n<li>\u2705 Encuadernado en <strong>pasta dura</strong></li>\n<li>\u2705 <strong>Grabado personalizado</strong> en portada o lomo</li>\n<li>\u2705 <strong>Recolecci\u00f3n y entrega</strong></li>\n<li>\u2705 Precio fijo: <strong>$250 MXN por ejemplar</strong></li>\n</ul>\n<p>Si desean ver ejemplos o agendar una llamada, con gusto lo coordinamos.</p>\n<p>Saludos cordiales,<br/><strong>Marcelo Olivo</strong><br/>\n    HM Encuadernaciones<br/>\n    \ud83d\udcde 81 3442 5657<br/>\n    \ud83d\udce7 hmencuadernaciones@gmail.com</p>\n\n<p style=\"margin-top: 2rem; font-weight: bold;\">\n  \u00bfTe interesa? \ud83d\udc49 \n  <a href=\"https://hmcotizacionesform.vercel.app/\" style=\"color: #007bff; text-decoration: none;\" target=\"_blank\">\n    Haz clic aqu\u00ed para solicitar tu cotizaci\u00f3n\n  </a>\n</p>\n</body>\n</html>\n", "publicidad": "\n<html>\n<body style=\"font-family: Arial, sans-serif; color: #333; line-height: 1.6;\">\n<p>Estimado equipo creativo:</p>\n<p><strong>Mi nombre es Marcelo Olivo, me comunico de parte de HM Encuadernaciones</strong>, empresa especializada en el <strong>encuadernado profesional de portafolios, presentaciones, campa\u00f1as y propuestas comerciales</strong>.</p>\n<p>Sabemos que en el mundo del marketing y la publicidad, la <strong>presentaci\u00f3n lo es todo</strong>. Por eso ofrecemos:</p>\n<ul>\n<li>\u2705 Encuadernado en <strong>pasta dura</strong> con acabados elegantes</li>\n<li>\u2705 <strong>Grabado personalizado</strong> con el nombre de la campa\u00f1a o marca</li>\n<li>\u2705 <strong>Servicio de recolecci\u00f3n y entrega</strong></li>\n<li>\u2705 Precio fijo: <strong>$250 MXN por ejemplar</strong></li>\n</ul>\n<p>Ideal para dejar una impresi\u00f3n duradera con clientes, concursos de pitch o juntas corporativas.</p>\n<p>Quedo atento a cualquier duda o propuesta.<br/>\n    \u00a1Ser\u00e1 un gusto colaborar con su agencia!</p>\n<p>Saludos cordiales,<br/><strong>Marcelo Olivo</strong><br/>\n    HM Encuadernaciones<br/>\n    \ud83d\udcde 81 3442 5657<br/>\n    \ud83d\udce7 hmencuadernaciones@gmail.com</p>\n\n<p style=\"margin-top: 2rem; font-weight: bold;\">\n  \u00bfTe interesa? \ud83d\udc49 \n  <a href=\"https://hmcotizacionesform.vercel.app/\" style=\"color: #007bff; text-decoration: none;\" target=\"_blank\">\n    Haz clic aqu\u00ed para solicitar tu cotizaci\u00f3n\n  </a>\n</p>\n</body>\n</html>\n"};
+const asuntos = {"notarias": "\ud83d\udcda Organizaci\u00f3n impecable para tus ap\u00e9ndices notariales", "despachos": "\ud83e\udde0 Da presencia legal a tus expedientes", "salud": "\ud83e\ude7a Historiales cl\u00ednicos con elegancia y calidad", "construccion": "\ud83c\udfd7\ufe0f Presenta tus proyectos con impacto visual", "gobierno": "\ud83d\udcc1 Organizaci\u00f3n documental con imagen institucional", "editoriales": "\ud83d\udcd6 Encuadernaci\u00f3n impecable para publicaciones especiales", "publicidad": "\ud83c\udfa8 Presenta tus campa\u00f1as con estilo y profesionalismo"};
+
+document.getElementById('clientType').addEventListener('change', (e) => {
+  const tipo = e.target.value;
+  document.getElementById('preview').innerHTML = templates[tipo] || '';
+  document.getElementById('asuntoAuto').textContent = "Asunto: " + (asuntos[tipo] || '');
+});
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const tipo = document.getElementById('clientType').value;
+  const html = templates[tipo] || '';
+  const subject = asuntos[tipo];
+
+  const file = document.getElementById('csvFile').files[0];
+  if (!file) return alert("Selecciona un archivo CSV");
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const lines = e.target.result.split('\n');
+    const emails = lines.map(line => line.trim()).filter(line => line);
+
+    progressBar.classList.remove('visually-hidden');
+    
+      } else {
+        width += 5;
+        progress.style.width = width + '%';
+        progress.textContent = width + '%';
+      }
+    }, 100);
+
+    for (const to of emails) {
+      try {
+        const res = await fetch('https://hmcorreos.onrender.com/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to, subject, html })
+        });
+        res.ok ? sentCount++ : failedCount++;
+      } catch {
+        failedCount++;
+      }
+    }
+
+    progress.textContent = '100%';
+    statusDiv.innerHTML = `<div class="alert alert-info mt-3">✅ Correos enviados: ${sentCount}<br>❌ Fallos: ${failedCount}</div>`;
+  };
+  reader.readAsText(file);
+});
+</script>
+</body>
+</html>
