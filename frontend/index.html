@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HM Correos Automáticos</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <style>
+    body {
+      background: radial-gradient(ellipse at top, #0f0f0f, #1a1a1a);
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #141414;
+      padding: 2.5rem;
+      border-radius: 1.5rem;
+      box-shadow: 0 0 30px rgba(0,255,200,0.15);
+    }
+    h1 {
+      font-size: 1.8rem;
+      text-align: center;
+      margin-bottom: 2rem;
+      color: #00ffc2;
+    }
+    label {
+      font-weight: bold;
+      margin-top: 1rem;
+    }
+    .form-control, .form-select {
+      background-color: #252525;
+      border: 1px solid #444;
+      color: white;
+    }
+    .btn-primary {
+      background: linear-gradient(to right, #00ffc2, #00b2a9);
+      border: none;
+      font-weight: bold;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(to right, #00e6b0, #009f91);
+    }
+    .progress {
+      margin-top: 1rem;
+      height: 25px;
+    }
+    #asuntoAuto {
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      color: #00ffc2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>HM Correos Automáticos</h1>
+    <form id="emailForm">
+      <label for="clientType">Tipo de cliente:</label>
+      <select id="clientType" class="form-select" required>
+        <option value="notarias">Notarías públicas</option>
+        <option value="despachos">Despachos jurídicos</option>
+        <option value="salud">Sector salud</option>
+        <option value="construccion">Construcción</option>
+        <option value="gobierno">Dependencias gubernamentales</option>
+        <option value="editoriales">Editoriales</option>
+        <option value="publicidad">Agencias de publicidad</option>
+      </select>
+
+      <div id="asuntoAuto">Asunto: 📚 Organización impecable para tus apéndices notariales</div>
+
+      <label for="csvFile">Seleccionar archivo CSV:</label>
+      <input type="file" id="csvFile" accept=".csv" class="form-control" required />
+
+      <label for="html">Contenido HTML:</label>
+      <textarea id="html" rows="5" class="form-control" required>
+<h2>Ejemplo de contenido HTML</h2><p>Correo personalizado según tipo de cliente.</p>
+      </textarea>
+
+      <button type="submit" class="btn btn-primary w-100 mt-4">Enviar correos</button>
+      <div class="progress visually-hidden" id="progressBar">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
+      </div>
+      <div class="mt-3" id="status"></div>
+    </form>
+  </div>
+  <script>
+const form = document.getElementById('emailForm');
+const progressBar = document.getElementById('progressBar');
+const progress = progressBar.querySelector('.progress-bar');
+const statusDiv = document.getElementById('status');
+
+const asuntos = {"notarias": "\ud83d\udcda Organizaci\u00f3n impecable para tus ap\u00e9ndices notariales", "despachos": "\ud83e\udde0 Da presencia legal a tus expedientes: encuadernado pro", "salud": "\ud83e\ude7a Ordena tus historiales cl\u00ednicos con elegancia y calidad", "construccion": "\ud83c\udfd7\ufe0f Presenta tus proyectos con fuerza: encuadernado premium", "gobierno": "\ud83d\udcc1 Orden documental con est\u00e1ndar gubernamental", "editoriales": "\ud83d\udcd6 Encuadernaci\u00f3n con impacto editorial y profesionalismo", "publicidad": "\ud83c\udfa8 Muestra tus campa\u00f1as con estilo: encuadernaci\u00f3n creativa"};
+
+document.getElementById('clientType').addEventListener('change', (e) => {
+  const tipo = e.target.value;
+  document.getElementById('asuntoAuto').textContent = "Asunto: " + (asuntos[tipo] || "");
+});
+
+function simulateProgress(doneCallback) {
+  let width = 0;
+  progressBar.classList.remove('visually-hidden');
+  const interval = setInterval(() => {
+    if (width >= 100) {
+      clearInterval(interval);
+      doneCallback();
+    } else {
+      width += 10;
+      progress.style.width = width + '%';
+      progress.textContent = width + '%';
+    }
+  }, 200);
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const html = document.getElementById('html').value;
+  const clientType = document.getElementById('clientType').value;
+  const subject = asuntos[clientType];
+
+  const file = document.getElementById('csvFile').files[0];
+  if (!file) return alert("Selecciona un archivo CSV");
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const lines = e.target.result.split('\n');
+    const emails = lines.map(line => line.trim()).filter(line => line);
+
+    simulateProgress(async () => {
+      let sentCount = 0;
+      for (const to of emails) {
+        try {
+          const res = await fetch('https://hmcorreos.onrender.com/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ to, subject, html })
+          });
+          const result = await res.json();
+          console.log(result);
+          sentCount++;
+        } catch (err) {
+          console.error('Error al enviar a:', to);
+        }
+      }
+      progress.textContent = 'Completado';
+      statusDiv.innerHTML = `<div class="alert alert-success mt-3">Se enviaron ${sentCount} correos exitosamente.</div>`;
+    });
+  };
+  reader.readAsText(file);
+});
+</script>
+</body>
+</html>
