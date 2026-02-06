@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,6 +6,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="hm_mail_icon_512x512.png" />
   <title>HM Correos Automáticos</title>
+
   <style>
     body { background: #111; color: white; font-family: sans-serif; text-align: center; padding: 2rem; }
     form { max-width: 600px; margin: auto; background: #1a1a1a; padding: 2rem; border-radius: 1rem; }
@@ -14,10 +14,13 @@
     select, input, textarea { width: 100%; padding: 0.5rem; border: none; border-radius: 5px; }
     button { margin-top: 1rem; background: #00ffc8; border: none; padding: 0.75rem 2rem; font-weight: bold; cursor: pointer; }
     .progress { margin-top: 1rem; }
+    .hint { font-size: 0.9rem; opacity: 0.8; margin-top: 0.25rem; text-align: left; }
   </style>
 </head>
+
 <body>
   <h1>HM Correos Automáticos</h1>
+
   <form>
     <label>Tipo de cliente:
       <select id="cliente">
@@ -28,17 +31,25 @@
         <option>Dependencias gubernamentales</option>
         <option>Editoriales</option>
         <option>Agencias de publicidad</option>
+        <option>Encuadernaciones empresariales</option>
       </select>
     </label>
+    <div class="hint">Al seleccionar el tipo de cliente, se carga automáticamente el asunto y el template correspondiente.</div>
+
     <label>Seleccionar archivo CSV:
       <input type="file" id="csv" accept=".csv" />
     </label>
+    <div class="hint">El CSV debe contener 1 correo por línea (como tus archivos *_solo_correos.csv).</div>
+
     <label>Asunto:
       <input type="text" id="asunto" />
     </label>
+
     <label>Contenido HTML:
-      <textarea id="contenido" rows="6">&lt;h2&gt;Ejemplo de contenido HTML&lt;/h2&gt;&lt;p&gt;Correo personalizado según tipo de cliente.&lt;/p&gt;</textarea>
+      <textarea id="contenido" rows="10"></textarea>
     </label>
+    <div class="hint">Se llena automáticamente desde tu archivo template (.html). Si quieres, también puedes editarlo manualmente.</div>
+
     <button type="submit">Enviar correos</button>
     <div class="progress" id="progreso"></div>
   </form>
@@ -51,50 +62,116 @@
     const cliente = document.getElementById("cliente");
     const progreso = document.getElementById("progreso");
 
+    // ✅ Asuntos por tipo (incluye "proveedor" generalista para empresariales)
     const asuntosPorCliente = {
-      "Notarías": "Organización impecable para tus apéndices notariales",
-      "Despachos jurídicos": "Presentación profesional de tus expedientes jurídicos",
-      "Sector salud": "Encuadernado seguro para tus archivos clínicos",
-      "Construcción": "Documentación técnica encuadernada con precisión",
-      "Dependencias gubernamentales": "Orden documental con calidad institucional",
-      "Editoriales": "Acabado editorial premium para tus publicaciones",
-      "Agencias de publicidad": "Portafolios impactantes, encuadernados a medida"
+      "Notarías": "Servicio de encuadernación profesional para apéndices notariales | HM Encuadernaciones",
+      "Despachos jurídicos": "Encuadernación profesional para expedientes | Presentación impecable y duradera",
+      "Sector salud": "Encuadernación y organización de archivos | Servicio confiable para clínicas y hospitales",
+      "Construcción": "Encuadernación de documentación técnica | Planos, bitácoras y expedientes",
+      "Dependencias gubernamentales": "Proveedor de encuadernación e impresos | Calidad institucional y entrega",
+      "Editoriales": "Encuadernación editorial premium | Pasta dura y acabados profesionales",
+      "Agencias de publicidad": "Impresión y encuadernación premium | Portafolios y presentaciones corporativas",
+
+      // 🔥 NUEVO (generaliza todo lo que vendes)
+      "Encuadernaciones empresariales": "Proveedor de encuadernación e imprenta | Agendas, bloc de notas y papelería corporativa"
     };
 
-    cliente.addEventListener("change", () => {
-      asunto.value = asuntosPorCliente[cliente.value] || "";
+    // ✅ Template por tipo (tu nuevo template ya integrado)
+    const templatePorCliente = {
+      "Notarías": "correo_template_nota.html",
+      "Despachos jurídicos": "correo_template_juridico.html",
+      "Sector salud": "correo_template_salud.html",
+      "Construcción": "correo_template_construccion.html",
+      "Dependencias gubernamentales": "correo_template_dependencias.html",
+      "Editoriales": "correo_template_editoriales.html",
+      "Agencias de publicidad": "correo_template_agencias.html",
+
+      // 🔥 NUEVO
+      "Encuadernaciones empresariales": "correo_template_encuadernacionempresarial.html"
+    };
+
+    async function cargarTemplate(tipoCliente) {
+      const file = templatePorCliente[tipoCliente];
+      if (!file) {
+        contenido.value = "<h2>Template no definido</h2><p>Define el archivo .html en templatePorCliente.</p>";
+        return;
+      }
+
+      try {
+        // cache no-store para que cuando edites el template se refleje
+        const res = await fetch(file, { cache: "no-store" });
+        if (!res.ok) throw new Error("No se pudo cargar template: " + file);
+        const html = await res.text();
+        contenido.value = html;
+      } catch (err) {
+        console.error(err);
+        contenido.value = `<h2>No se pudo cargar el template</h2><p>Revisa que exista el archivo: <strong>${file}</strong></p>`;
+        alert("No se pudo cargar el template HTML.\nRevisa que exista el archivo:\n" + file);
+      }
+    }
+
+    function aplicarAsunto(tipoCliente) {
+      asunto.value = asuntosPorCliente[tipoCliente] || "";
+    }
+
+    // Al cambiar cliente: asunto + template
+    cliente.addEventListener("change", async () => {
+      aplicarAsunto(cliente.value);
+      await cargarTemplate(cliente.value);
     });
 
+    // Inicializar al cargar la página
+    (async () => {
+      aplicarAsunto(cliente.value);
+      await cargarTemplate(cliente.value);
+    })();
+
+    // Envío masivo
     form.addEventListener("submit", async (e) => {
-    alert("🧪 Enviando...");
-    console.log("Formulario interceptado correctamente");
-      e.preventDefault(); // 💡 Previene recarga de la página
+      e.preventDefault();
 
       if (!csv.files.length) return alert("Sube un archivo CSV.");
       const file = csv.files[0];
+
       const reader = new FileReader();
       reader.onload = async function () {
-        const lines = reader.result.split(/\r?\n/).filter(Boolean);
+        const lines = reader.result
+          .split(/\r?\n/)
+          .map(x => x.trim())
+          .filter(Boolean);
+
         const html = contenido.value;
         const subject = asunto.value;
-        let sent = 0, failed = 0;
 
-        progreso.innerText = "⏳ Enviando correos, por favor espera...";
+        if (!subject) return alert("Falta el asunto.");
+        if (!html) return alert("Falta el contenido HTML.");
+
+        let sent = 0, failed = 0;
+        progreso.innerText = `⏳ Enviando correos... 0/${lines.length}`;
+
         for (let i = 0; i < lines.length; i++) {
-          const to = lines[i].trim();
+          const to = lines[i];
+
           try {
             const res = await fetch("https://hmcorreos.onrender.com/send-email", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ to, subject, html })
             });
-            res.ok ? sent++ : failed++;
+
+            if (res.ok) sent++;
+            else failed++;
+
           } catch {
             failed++;
           }
+
+          progreso.innerText = `📨 Enviando... ${i + 1}/${lines.length} | ✅ ${sent} | ❌ ${failed}`;
         }
+
         progreso.innerText = `✅ Correos enviados: ${sent} | ❌ Fallos: ${failed}`;
       };
+
       reader.readAsText(file);
     });
   </script>
